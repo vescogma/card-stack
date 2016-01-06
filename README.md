@@ -1,2 +1,5 @@
 # card-stack
-vertical scrolling stacking cards
+
+Vertical scrolling stacking cards ui for use in... anything?
+The parallax and stacking effect made using css transforms for speed.
+

@@ -1,0 +1,23 @@
+{
+  "name": "card-stack",
+  "version": "1.0.0",
+  "description": "Vertical scrolling stacking cards made using css transforms.",
+  "main": "index.html",
+  "scripts": {
+    "start": "http-server src/ -p 3000 -d false",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/vescogma/card-stack.git"
+  },
+  "author": "Miguel Vesco",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/vescogma/card-stack/issues"
+  },
+  "homepage": "https://github.com/vescogma/card-stack#readme",
+  "dependencies": {
+    "http-server": "^0.8.5"
+  }
+}

@@ -5,7 +5,7 @@ var cards = [
   { node: document.getElementById('c4') },
   { node: document.getElementById('c5') },
 ]
-var tracker = 0;
+var tracker = -1;
 var lastTouches = []
 var interruptAnimation = false;
 var touchDown, touchUp;
@@ -15,20 +15,63 @@ window.onload = start;
 
 function start() {
   cards.reduce(function (prev, next) {
-    next.initial = prev;
     next.offset = prev;
     next.height = next.node.offsetHeight;
+    next.stackedOffset = next.height > window.innerHeight ?
+      window.innerHeight - next.height : 0;
     next.node.style.transform = 'translate3d(0, ' + prev + 'px, 0)';
     next.node.style.WebkitTransform = 'translate3d(0, ' + prev + 'px, 0)';
     return prev + next.height;
   }, 0);
 }
 
-function addTouch(touch) {
-  lastTouches.push(touch);
-  if (lastTouches.length > 3) {
-    lastTouches.splice(0, lastTouches.length - 3);
+function onMove(event, type) {
+  var delta = getDelta(event, type);
+  cards.reduce(function (prev, next, index) {
+    if (index > tracker) {
+      next.past = next.offset;
+      next.offset = checkCurrentCard(next, delta, index, prev);
+      if (next.past !== next.offset) {
+        next.node.style.transform = 'translate3d(0, ' + next.offset + 'px, 0)';
+        next.node.style.WebkitTransform =
+          'translate3d(0, ' + next.offset + 'px, 0)';
+      }
+    }
+    return next;
+  }, {height: 0, offset: 0})
+}
+
+function checkCurrentCard(currentCard, delta, cardIndex, previousCard) {
+  if (cardIndex === tracker + 1) {
+    var result;
+    if (currentCard.offset + delta >= previousCard.height) {
+      if (delta > 0) {
+        tracker = tracker < 0 ? -1 : tracker - 1;
+      }
+      result = previousCard.height;
+    } else if (currentCard.offset + delta <= currentCard.stackedOffset) {
+      tracker = (cardIndex === cards.length - 1) ? cardIndex - 1 : cardIndex;
+      result = currentCard.stackedOffset;
+    } else {
+      result = currentCard.offset + delta;
+    }
+    return checkMaximum(result, cardIndex);
+  } else {
+    return previousCard.offset + previousCard.height;
   }
+}
+
+function checkMaximum(offset, cardIndex) {
+  var heightLeft = cards.reduce(function (prev, card, index) {
+    if (index > cardIndex - 1) {
+      return card.height + prev;
+    }
+    return prev;
+  }, 0);
+  if (heightLeft + offset < window.innerHeight) {
+    return window.innerHeight - heightLeft;
+  }
+  return offset;
 }
 
 function getDelta(event, type) {
@@ -42,6 +85,13 @@ function getDelta(event, type) {
     case 'release':
     default:
       return event;
+  }
+}
+
+function addTouch(touch) {
+  lastTouches.push(touch);
+  if (lastTouches.length > 3) {
+    lastTouches.splice(0, lastTouches.length - 3);
   }
 }
 
@@ -91,60 +141,8 @@ function onRelease(start, end, touches) {
   }
 }
 
-function onMove(event, type) {
-  var delta = getDelta(event, type);
-  cards.reduce(function (prev, next, index) {
-    if (index > tracker) {
-      next.past = next.offset;
-      next.offset = checkCurrentCard(next.offset, delta, index, prev);
-      if (next.past !== next.offset) {
-        next.node.style.transform = 'translate3d(0, ' + next.offset + 'px, 0)';
-        next.node.style.WebkitTransform =
-          'translate3d(0, ' + next.offset + 'px, 0)';
-      }
-    }
-    return next;
-  })
-
-  function checkMaximum(offset, cardIndex) {
-    var heightLeft = cards.reduce(function (prev, card, index) {
-      if (index > cardIndex - 1) {
-        return card.height + prev;
-      }
-      return prev;
-    }, 0);
-    if (heightLeft + offset < window.innerHeight) {
-      return window.innerHeight - heightLeft;
-    }
-    return offset;
-  }
-
-  function checkTopCard(offset, delta, cardIndex, previousCard) {
-    var result;
-    if (offset + delta >= previousCard.height) {
-      if (delta > 0) {
-        tracker = tracker === 0 ? 0 : tracker - 1;
-      }
-      result = previousCard.height;
-    } else {
-      result = offset + delta;
-    }
-    return checkMaximum(result, cardIndex);
-  }
-
-  function checkCurrentCard(offset, delta, cardIndex, previousCard) {
-    if (offset + delta <= 0) {
-      tracker = (cardIndex === cards.length - 1) ? cardIndex - 1 : cardIndex;
-      return 0;
-    }
-    if (cardIndex === tracker + 1) {
-      return checkTopCard(offset, delta, cardIndex, previousCard);
-    }
-    return previousCard.offset + previousCard.height;
-  }
-}
-
 window.addEventListener('wheel', function(event){
+  interruptAnimation = true;
   onMove(event, 'wheel');
 });
 window.addEventListener('touchstart', function(event){

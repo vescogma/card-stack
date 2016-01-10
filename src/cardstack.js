@@ -38,26 +38,26 @@ function onMove(event, type) {
       }
     }
     return next;
-  }, {height: 0, offset: 0})
+  }, {height: 0, offset: 0, stackedOffset: 0})
 }
 
-function checkCurrentCard(currentCard, delta, cardIndex, previousCard) {
+function checkCurrentCard(card, delta, cardIndex, prev) {
   if (cardIndex === tracker + 1) {
     var result;
-    if (currentCard.offset + delta >= previousCard.height) {
+    if (card.offset + delta >= prev.height + prev.stackedOffset) {
       if (delta > 0) {
         tracker = tracker < 0 ? -1 : tracker - 1;
       }
-      result = previousCard.height;
-    } else if (currentCard.offset + delta <= currentCard.stackedOffset) {
+      result = prev.height;
+    } else if (card.offset + delta <= card.stackedOffset) {
       tracker = (cardIndex === cards.length - 1) ? cardIndex - 1 : cardIndex;
-      result = currentCard.stackedOffset;
+      result = card.stackedOffset;
     } else {
-      result = currentCard.offset + delta;
+      result = card.offset + delta;
     }
     return checkMaximum(result, cardIndex);
   } else {
-    return previousCard.offset + previousCard.height;
+    return prev.offset + prev.height;
   }
 }
 

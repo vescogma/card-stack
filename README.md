@@ -11,4 +11,4 @@ The parallax and stacking effect made using css transforms for speed.
 
 ## preview
 
-Check out the demo at [codepen.io](http://codepen.io/anon/pen/OMmqyx)
+Check out the demo at [codepen.io](http://codepen.io/vescogma/pen/ZQKPQP/)

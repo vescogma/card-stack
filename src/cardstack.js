@@ -1,28 +1,50 @@
-var cards = [
-  { node: document.getElementById('c1') },
-  { node: document.getElementById('c2') },
-  { node: document.getElementById('c3') },
-  { node: document.getElementById('c4') },
-  { node: document.getElementById('c5') },
-]
+var cards = getCards();
 var tracker = -1;
 var lastTouches = []
 var interruptAnimation = false;
 var touchDown, touchUp;
-var wrapper = document.getElementById('cwrap');
 
-window.onload = start;
+window.onload = initialize;
 
-function start() {
+function getCards() {
+  return Array.from(document.getElementsByName('c-card')).map(function (card) {
+    return {
+      node: card,
+      height: card.offsetHeight,
+      stackedOffset: card.offsetHeight > window.innerHeight ?
+        window.innerHeight - card.offsetHeight : 0
+    }
+  });
+}
+
+function initialize() {
   cards.reduce(function (prev, next) {
     next.offset = prev;
-    next.height = next.node.offsetHeight;
-    next.stackedOffset = next.height > window.innerHeight ?
-      window.innerHeight - next.height : 0;
     next.node.style.transform = 'translate3d(0, ' + prev + 'px, 0)';
     next.node.style.WebkitTransform = 'translate3d(0, ' + prev + 'px, 0)';
     return prev + next.height;
   }, 0);
+}
+
+function addTouch(touch) {
+  lastTouches.push(touch);
+  if (lastTouches.length > 3) {
+    lastTouches.splice(0, lastTouches.length - 3);
+  }
+}
+
+function getDelta(event, type) {
+  switch (type) {
+    case 'touch':
+      var last = lastTouches[lastTouches.length - 1].y;
+      addTouch({ y: event.clientY, stamp: Date.now() });
+      return event.clientY - (last || event.clientY );
+    case 'wheel':
+      return event.deltaY;
+    case 'offset':
+    default:
+      return event;
+  }
 }
 
 function onMove(event, type) {
@@ -45,10 +67,10 @@ function checkCurrentCard(card, delta, cardIndex, prev) {
   if (cardIndex === tracker + 1) {
     var result;
     if (card.offset + delta >= prev.height + prev.stackedOffset) {
-      if (delta > 0) {
+      if (delta > 0 || delta < 0) {
         tracker = tracker < 0 ? -1 : tracker - 1;
       }
-      result = prev.height;
+      result = prev.height + prev.stackedOffset;
     } else if (card.offset + delta <= card.stackedOffset) {
       tracker = (cardIndex === cards.length - 1) ? cardIndex - 1 : cardIndex;
       result = card.stackedOffset;
@@ -74,25 +96,28 @@ function checkMaximum(offset, cardIndex) {
   return offset;
 }
 
-function getDelta(event, type) {
-  switch (type) {
-    case 'touchmove':
-      var last = lastTouches[lastTouches.length - 1].y;
-      addTouch({ y: event.clientY, stamp: Date.now() });
-      return event.clientY - (last || event.clientY );
-    case 'wheel':
-      return event.deltaY;
-    case 'release':
-    default:
-      return event;
-  }
-}
-
-function addTouch(touch) {
-  lastTouches.push(touch);
-  if (lastTouches.length > 3) {
-    lastTouches.splice(0, lastTouches.length - 3);
-  }
+function onResize() {
+  cards = getCards();
+  cards.reduce(function (prev, next, index) {
+    next.offset = prev.offset + prev.height;
+    if (checkMaximum(next.offset, index) !== next.offset) {
+      tracker = tracker < 0 ? -1 : tracker - 1;
+    }
+    if (index <= tracker) {
+      next.offset = next.stackedOffset;
+      next.node.style.transform =
+        'translate3d(0, ' + next.stackedOffset + 'px, 0)';
+      next.node.style.WebkitTransform =
+        'translate3d(0, ' + next.stackedOffset + 'px, 0)';
+    }
+    if (index > tracker) {
+      next.offset = checkCurrentCard(next, 0, index, prev);
+      next.node.style.transform = 'translate3d(0, ' + next.offset + 'px, 0)';
+      next.node.style.WebkitTransform =
+        'translate3d(0, ' + next.offset + 'px, 0)';
+    }
+    return next;
+  }, {height: 0, offset: 0, stackedOffset: 0})
 }
 
 function onTouch(touch, direction) {
@@ -132,15 +157,19 @@ function onRelease(start, end, touches) {
     interruptAnimation = false;
     requestAnimationFrame(animateRelease);
   }
+
   function animateRelease() {
     if (!interruptAnimation && (distance > 1 || distance < -1)) {
-      target = distance - (distance = distance * 0.95);
-      onMove(Math.floor(target), 'release');
+      target = distance - (distance = distance * 0.90);
+      onMove(Math.floor(target), 'offset');
       requestAnimationFrame(animateRelease);
     }
   }
 }
 
+window.addEventListener('resize', function(event){
+  onResize();
+});
 window.addEventListener('wheel', function(event){
   interruptAnimation = true;
   onMove(event, 'wheel');
@@ -152,7 +181,7 @@ window.addEventListener('touchstart', function(event){
 });
 window.addEventListener('touchmove', function(event){
   event.preventDefault();
-  onMove(event.touches[0], 'touchmove');
+  onMove(event.touches[0], 'touch');
 });
 window.addEventListener('touchend', function(event){
   event.preventDefault();

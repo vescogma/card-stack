@@ -20,10 +20,17 @@ function getCards() {
 function initialize() {
   cards.reduce(function (prev, next) {
     next.offset = prev;
-    next.node.style.transform = 'translate3d(0, ' + prev + 'px, 0)';
-    next.node.style.WebkitTransform = 'translate3d(0, ' + prev + 'px, 0)';
+    setTransform(next.node, 'translate3d(0px, ' + prev + 'px, 0px)');
     return prev + next.height;
   }, 0);
+}
+
+function setTransform(node, transformProp){
+  node.style.WebkitTransform = transformProp;
+  node.style.MozTransform = transformProp;
+  node.style.msTransform = transformProp;
+  node.style.OTransform = transformProp;
+  node.style.transform = transformProp;
 }
 
 function addTouch(touch) {
@@ -54,9 +61,7 @@ function onMove(event, type) {
       next.past = next.offset;
       next.offset = checkCurrentCard(next, delta, index, prev);
       if (next.past !== next.offset) {
-        next.node.style.transform = 'translate3d(0, ' + next.offset + 'px, 0)';
-        next.node.style.WebkitTransform =
-          'translate3d(0, ' + next.offset + 'px, 0)';
+        setTransform(next.node, 'translate3d(0px, ' + next.offset + 'px, 0px)');
       }
     }
     return next;
@@ -105,16 +110,12 @@ function onResize() {
     }
     if (index <= tracker) {
       next.offset = next.stackedOffset;
-      next.node.style.transform =
-        'translate3d(0, ' + next.stackedOffset + 'px, 0)';
-      next.node.style.WebkitTransform =
-        'translate3d(0, ' + next.stackedOffset + 'px, 0)';
+      setTransform(next.node,
+        'translate3d(0px, ' + next.stackedOffset + 'px, 0px)');
     }
     if (index > tracker) {
       next.offset = checkCurrentCard(next, 0, index, prev);
-      next.node.style.transform = 'translate3d(0, ' + next.offset + 'px, 0)';
-      next.node.style.WebkitTransform =
-        'translate3d(0, ' + next.offset + 'px, 0)';
+      setTransform(next.node, 'translate3d(0px, ' + next.offset + 'px, 0px)');
     }
     return next;
   }, {height: 0, offset: 0, stackedOffset: 0})
